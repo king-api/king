@@ -12,36 +12,39 @@ def search():
     search_url = f"https://m.1688.com/offer_search/-{encoded_query}.html"
 
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 Chrome/122.0.0.0 Mobile Safari/537.36"
     }
 
     try:
         response = requests.get(search_url, headers=headers)
         soup = BeautifulSoup(response.text, 'html.parser')
-        products = []
 
-        # Attempt to find offer items — HTML structure may need adjusting
-        for item in soup.select('a'):  # You may narrow this with class names
-            title = item.get_text(strip=True)
+        products = []
+        for item in soup.select('a.offer'):
+            title = item.get('title') or item.text.strip()
             link = item.get('href')
-            if title and link and 'offer' in link:
+            img = item.select_one('img')
+            image_url = img['data-lazyload-src'] if img and 'data-lazyload-src' in img.attrs else (img['src'] if img else '')
+
+            if title and link:
                 products.append({
                     'title': title,
-                    'link': link
+                    'link': link,
+                    'image': image_url
                 })
 
         return jsonify({
-            "query": query,
-            "search_url": search_url,
-            "products": products[:10]  # Limit for preview
+            'query': query,
+            'search_url': search_url,
+            'products': products
         })
-
     except Exception as e:
         return jsonify({
-            "error": str(e),
-            "query": query,
-            "search_url": search_url
-        }), 500
+            'error': str(e),
+            'query': query,
+            'search_url': search_url,
+            'products': []
+        })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
