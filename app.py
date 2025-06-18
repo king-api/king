@@ -1,6 +1,5 @@
 import requests
 from flask import Flask, request, jsonify
-from bs4 import BeautifulSoup
 import os
 
 app = Flask(__name__)
@@ -9,26 +8,29 @@ app = Flask(__name__)
 def search():
     query = request.args.get('q', '')
     encoded_query = requests.utils.quote(query)
-    search_url = f"https://s.1688.com/selloffer/offer_search.htm?keywords={encoded_query}"
+    api_url = f"https://api.1688.com/suggestion/ajax.json?keywords={encoded_query}&pageSize=20"
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Referer": f"https://m.1688.com/offer_search/-{encoded_query}.html"
     }
 
     try:
-        response = requests.get(search_url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-
+        res = requests.get(api_url, headers=headers)
+        data = res.json()
         products = []
-        for item in soup.select('.offer-list-row .offer-title'):
-            title = item.get_text(strip=True)
-            link = item.get('href')
-            if title and link:
-                products.append({'title': title, 'link': link})
+
+        # Example format: Adjust depending on actual JSON keys
+        for item in data.get('result', []):
+            products.append({
+                'title': item.get('name'),
+                'link': item.get('url'),
+                'image': item.get('image', '')
+            })
 
         return jsonify({
             'query': query,
-            'search_url': search_url,
+            'search_url': api_url,
             'products': products
         })
 
@@ -36,7 +38,6 @@ def search():
         return jsonify({
             'error': str(e),
             'query': query,
-            'search_url': search_url,
             'products': []
         })
 
