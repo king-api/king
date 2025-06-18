@@ -1,0 +1,12 @@
+# Ignore Windows system folders
+AppData/
+Documents/
+My Documents/
+Local Settings/
+*.lock
+*.tmp
+*.ini
+*.log
+*.iml
+.gradle/
+.android/
