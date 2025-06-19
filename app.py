@@ -1,47 +1,27 @@
-from flask import Flask, request, jsonify
 import requests
+from flask import Flask, request, Response
 import os
 
 app = Flask(__name__)
 
-@app.route('/search')
-def search():
+@app.route('/proxy')
+def proxy():
     query = request.args.get('q', '')
-    url = "https://1688-datahub1.p.rapidapi.com/item_search"
+    if not query:
+        return {"error": "Missing search query"}, 400
+
+    search_url = f"https://m.1688.com/offer_search/-{requests.utils.quote(query)}.html"
 
     headers = {
-        "x-rapidapi-host": "1688-datahub1.p.rapidapi.com",
-        "x-rapidapi-key": "b01bd03224mshb0e039c6191ca74p1ffe48jsne113075021df"
-    }
-
-    params = {
-        "keyword": query,
-        "page": 1,
-        "pageSize": 10
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36',
+        'Referer': 'https://m.1688.com'
     }
 
     try:
-        response = requests.get(url, headers=headers, params=params)
-        data = response.json()
-        items = data.get("data", {}).get("data", [])
-
-        # Extract simplified info
-        results = []
-        for item in items:
-            results.append({
-                "title": item.get("subjectTrans"),
-                "image": item.get("imageUrl"),
-                "price": item.get("priceInfo", {}).get("price"),
-                "sold": item.get("monthSold"),
-                "offerId": item.get("offerId")
-            })
-
-        return jsonify({
-            "query": query,
-            "results": results
-        })
+        r = requests.get(search_url, headers=headers, timeout=10)
+        return Response(r.content, content_type=r.headers['Content-Type'])
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": "Failed to fetch content", "details": str(e)}, 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
