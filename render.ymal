@@ -1,7 +1,6 @@
 services:
   - type: web
-    name: king-flask-api
+    name: king-1688-proxy
     env: python
     buildCommand: ""
-    startCommand: python app.py
-    plan: free
+    startCommand: gunicorn app:app
